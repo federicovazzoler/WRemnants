@@ -114,8 +114,8 @@ elif args.addHelicityHistos:
     axis_helicity = helicity_utils.axis_helicity_multidim
     # axis_helicity = hist.axis.Integer(-1, 5, name="helicity", overflow=False, underflow=False)
     # the following just prepares the existence of the group for out-of-acceptance signal, but doesn't create or define the histogram yet
-    datasets = unfolding_tools.add_out_of_acceptance(datasets, group = "Wmunu")
-    groups_to_aggregate.append("BkgWmunu")
+    datasets = unfolding_tools.add_out_of_acceptance(datasets, group = "Zmumu")
+    groups_to_aggregate.append("BkgZmumu")
 
 # define helpers
 muon_prefiring_helper, muon_prefiring_helper_stat, muon_prefiring_helper_syst = wremnants.make_muon_prefiring_helpers(era = era)
@@ -176,7 +176,7 @@ def select_fiducial_space_theoryAgnostic(df, ptVgenMax, absYVgenMax, accept=True
 def define_helicity_weights(df):
     # define the helicity tensor, here nominal_weight will only have theory weights, no experimental pieces, it is defined in theory_tools.define_theory_weights_and_corrs
     weightsByHelicity_helper = wremnants.makehelicityWeightHelper()
-    df = df.Define("helWeight_tensor", weightsByHelicity_helper, ["massVgen", "yVgen", "ptVgen", "chargeVgen", "csSineCosThetaPhi", "nominal_weight"])
+    df = df.Define("helWeight_tensor", weightsByHelicity_helper, ["massVgen", "yVgen", "ptVgen", "chargeVgen", "gencsSineCosThetaPhi", "nominal_weight"])
     df = df.Define("nominal_weight_helicity", "wrem::scalarmultiplyHelWeightTensor(nominal_weight,helWeight_tensor)")
     return df
 
@@ -314,7 +314,6 @@ def build_graph(df, dataset):
 
     if args.csVarsHist:
         df = df.Define("csSineCosThetaPhill", "wrem::csSineCosThetaPhi(nonTrigMuons_mom4, trigMuons_mom4)")
-    
         df = df.Define("cosThetaStarll", "csSineCosThetaPhill.costheta")
         df = df.Define("phiStarll", "std::atan2(csSineCosThetaPhill.sinphi, csSineCosThetaPhill.cosphi)")
 
