@@ -80,7 +80,10 @@ class tensorRank2_helper_helicity {
 }; 
 
 
-Eigen::TensorFixedSize<double, Eigen::Sizes<6>> scalarmultiplyHelWeightTensor(double wt, Eigen::TensorFixedSize<double, Eigen::Sizes<6>>& helTensor) {
+// Eigen::TensorFixedSize<double, Eigen::Sizes<6>> scalarmultiplyHelWeightTensor(double wt, Eigen::TensorFixedSize<double, Eigen::Sizes<6>>& helTensor) {
+//   return wt*helTensor;
+// }
+Eigen::TensorFixedSize<double, Eigen::Sizes<9>> scalarmultiplyHelWeightTensor(double wt, Eigen::TensorFixedSize<double, Eigen::Sizes<9>>& helTensor) {
   return wt*helTensor;
 }
 
@@ -90,7 +93,7 @@ class WeightByHelicityHelper : public TensorCorrectionsHelper<T> {
    using tensor_t = typename T::storage_type::value_type::tensor_t;
    static constexpr auto sizes = narf::tensor_traits<tensor_t>::sizes;
    //static constexpr auto nhelicity = NHELICITY;
-   static constexpr auto NHELICITY_WEIGHTS = 6;
+   static constexpr auto NHELICITY_WEIGHTS = 9;
    // TODO: Can presumably get the double type from the template param
    typedef Eigen::TensorFixedSize<double, Eigen::Sizes<NHELICITY_WEIGHTS>> helweight_tensor_t;
    
@@ -98,13 +101,13 @@ class WeightByHelicityHelper : public TensorCorrectionsHelper<T> {
    using base_t::base_t;
    
    helweight_tensor_t operator() (double mV, double yV, double ptV, int qV, const CSVars &csvars, double nominal_weight) {
-     //static_assert(nhelicity == NHELICITY);
+     //static_assert(nhelicity == 8);
      const auto moments = csAngularFactors(csvars);
      const auto coeffs = base_t::get_tensor(mV, yV, ptV, qV);
      helweight_tensor_t helWeights;
      double sum = 0.;
      for(unsigned int i = 0; i < NHELICITY;i++) {
-       if(i<6) helWeights(i) = coeffs(i) * moments(i);//save only upto 6 for further use
+       if(i<9) helWeights(i) = coeffs(i) * moments(i);//save only upto 6 for further use
        sum += coeffs(i) * moments(i);//full sum of all components
      }       
      double factor = 1./sum;
