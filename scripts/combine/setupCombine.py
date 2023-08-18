@@ -690,6 +690,7 @@ def main(args, xnorm=False):
     return
 
 if __name__ == "__main__":
+
     parser = make_parser()
     args = parser.parse_args()
     
