@@ -279,7 +279,7 @@ def build_graph(df, dataset):
     df = df.Define("etaDiff", "trigMuons_eta0-nonTrigMuons_eta0") # plus - minus 
 
     if args.csVarsHist:
-        df = df.Define("csSineCosThetaPhill", "wrem::csSineCosThetaPhi(nonTrigMuons_mom4, trigMuons_mom4)")
+        df = df.Define("csSineCosThetaPhill", "wrem::CalccsSineCosThetaPhi(nonTrigMuons_mom4, trigMuons_mom4)")
         df = df.Define("cosThetaStarll", "csSineCosThetaPhill.costheta")
         df = df.Define("phiStarll", "std::atan2(csSineCosThetaPhill.sinphi, csSineCosThetaPhill.cosphi)")
 
@@ -307,7 +307,9 @@ def build_graph(df, dataset):
         results.append(df.HistoBoost("weight", [hist.axis.Regular(100, -2, 2)], ["nominal_weight"], storage=hist.storage.Double()))
         results.append(df.HistoBoost("nominal", axes, [*cols, "nominal_weight"]))
 
-    for obs in ["ptll", "mll", "yll", "etaPlus", "etaMinus", "ptPlus", "ptMinus"]:
+    obss = ["ptll", "mll", "yll", "etaPlus", "etaMinus", "ptPlus", "ptMinus"]
+    if args.csVarsHist: obss += ['cosThetaStarll', 'phiStarll']
+    for obs in obss:
         if dataset.is_data:
             results.append(df.HistoBoost(f"nominal_{obs}", [all_axes[obs]], [obs]))
         else:

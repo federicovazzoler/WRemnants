@@ -156,7 +156,7 @@ def define_prefsr_vars(df):
     df = df.Define("phiVgen", "genV.Phi()")
     df = df.Define("absYVgen", "std::fabs(yVgen)")
     df = df.Define("chargeVgen", "GenPart_pdgId[prefsrLeps[0]] + GenPart_pdgId[prefsrLeps[1]]")
-    df = df.Define("csSineCosThetaPhi", "wrem::csSineCosThetaPhi(genlanti, genl)")
+    df = df.Define("csSineCosThetaPhi", "wrem::CalccsSineCosThetaPhi(genlanti, genl)")
     return df
 
 def define_scale_tensor(df):
