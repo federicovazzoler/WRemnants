@@ -5,7 +5,7 @@ parser,initargs = common.common_parser(True)
 import ROOT
 import narf
 import wremnants
-from wremnants import theory_tools,syst_tools,theory_corrections, muon_validation, muon_calibration, muon_selections, unfolding_tools, helicity_utils
+from wremnants import theory_tools,syst_tools,theory_corrections, muon_validation, muon_calibration, muon_selections, unfolding_tools, helicity_utils, theoryAgnostic_tools
 from wremnants.histmaker_tools import scale_to_data, aggregate_groups
 from wremnants.datasets.dataset_tools import getDatasets
 import hist
@@ -158,51 +158,16 @@ corr_helpers = theory_corrections.load_corr_helpers([d.name for d in datasets if
 ######################################################
 ######################################################
 ######################################################
-## FIXME:
-## move next functions below to some other place to import from
-def select_fiducial_space_theoryAgnostic(df, ptVgenMax, absYVgenMax, accept=True):
-    # might need to account for some Ai which we neglect, we may have an out-oc-acceptance per helicity state
-    selection = f"ptVgen < {ptVgenMax} && absYVgen < {absYVgenMax}"
-    df = df.Define("fiducial", selection)
-    if accept:
-        df = df.Filter("fiducial")
-        logger.debug(f"Theory agnostic fiducial cut: {selection}")
-    else:
-        df = df.Filter("fiducial == 0")
-        logger.debug(f"Theory agnostic fiducial cut (out-of-acceptance): not ({selection})")
-    return df
+## FIXME/TODO
+## next function should have been imported from theoryAgnostic_tools.py, but requires too many things as input,
+## such as the helpers created here. Since it is effectively a specialization of the loop flow,
+## it is part of the histmaker and is probably fine to have it here.
+## In fact, having this custom function overriding the main graph is probably not the best idea, should rather use the same
 
-def define_helicity_weights(df):
-    # define the helicity tensor, here nominal_weight will only have theory weights, no experimental pieces, it is defined in theory_tools.define_theory_weights_and_corrs
-    weightsByHelicity_helper = wremnants.makehelicityWeightHelper()
-    df = df.Define("helWeight_tensor", weightsByHelicity_helper, ["massVgen", "yVgen", "ptVgen", "chargeVgen", "csSineCosThetaPhi", "nominal_weight"])
-    df = df.Define("nominal_weight_helicity", "wrem::scalarmultiplyHelWeightTensor(nominal_weight,helWeight_tensor)")
-    return df
-
-def add_xnorm_histograms_theoryAgnostic(results, df, args, dataset_name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols):
-    # add histograms before any selection
-    df_xnorm = df
-    df_xnorm = df_xnorm.DefinePerSample("exp_weight", "1.0")
-    df_xnorm = theory_tools.define_theory_weights_and_corrs(df_xnorm, dataset_name, corr_helpers, args)
-    # define the helicity tensor, here nominal_weight will only have theory weights, no experimental pieces, it is defined in theory_tools.define_theory_weights_and_corrs
-    df_xnorm = define_helicity_weights(df_xnorm)
-    df_xnorm = df_xnorm.DefinePerSample("xnorm", "0.5")
-    axis_xnorm = hist.axis.Regular(1, 0., 1., name = "count", underflow=False, overflow=False)
-    xnorm_axes = [axis_xnorm, *theoryAgnostic_axes]
-    xnorm_cols = ["xnorm", *theoryAgnostic_cols]
-    xnormByHelicity = df_xnorm.HistoBoost("xnorm", xnorm_axes, [*xnorm_cols, "nominal_weight_helicity"], tensor_axes=[axis_helicity])
-    results.append(xnormByHelicity)
-    if not args.onlyMainHistograms:
-        syst_tools.add_theory_hists(results, df_xnorm, args, dataset_name, corr_helpers, qcdScaleByHelicity_helper, xnorm_axes, xnorm_cols, base_name="xnorm", for_wmass=True, addhelicity=True)
-    else:
-        #FIXME: hardcoded to keep mass weights, this would be done in add_theory_hists
-        df_xnorm = syst_tools.define_mass_weights(df_xnorm, dataset_name)
-        syst_tools.add_massweights_hist(results, df_xnorm, xnorm_axes, xnorm_cols, base_name="xnorm", proc=dataset_name, addhelicity=True)
-        
 # graph building for W sample with helicity weights
-def whistosbyHelicity(df, results, dataset, nominal_axes_thAgn, nominal_cols_thAgn, args):
-    logger.info("Entered function whistobyHelicity")
-    df = define_helicity_weights(df)
+def setTheoryAgnosticGraph(df, results, dataset, nominal_axes_thAgn, nominal_cols_thAgn, args):
+    logger.info(f"Setting theory agnostic graph for {dataset.name}")
+    df = theoryAgnostic_tools.define_helicity_weights(df)
     nominalByHelicity = df.HistoBoost("nominal", nominal_axes_thAgn, [*nominal_cols_thAgn, "nominal_weight_helicity"], tensor_axes=[axis_helicity])
     results.append(nominalByHelicity)
 
@@ -211,13 +176,10 @@ def whistosbyHelicity(df, results, dataset, nominal_axes_thAgn, nominal_cols_thA
             df = syst_tools.add_L1Prefire_unc_hists(results, df, muon_prefiring_helper_stat, muon_prefiring_helper_syst, nominal_axes_thAgn, nominal_cols_thAgn, addhelicity=True)
             df = syst_tools.add_muon_efficiency_unc_hists(results, df, muon_efficiency_helper_stat, muon_efficiency_helper_syst, nominal_axes_thAgn, nominal_cols_thAgn, what_analysis=thisAnalysis, addhelicity=True)
         df = syst_tools.add_theory_hists(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, nominal_axes_thAgn, nominal_cols_thAgn, for_wmass=True, addhelicity=True)
-    else:
-        #FIXME: hardcoded to keep mass weights, this would be done in add_theory_hists
-        df = syst_tools.define_mass_weights(df, dataset.name)
-        syst_tools.add_massweights_hist(results, df, nominal_axes_thAgn, nominal_cols_thAgn, proc=dataset.name, addhelicity=True)
-######################################################
-######################################################
-######################################################
+    # else:
+    #     #FIXME: hardcoded to keep mass weights, this would be done in add_theory_hists
+    #     df = syst_tools.define_mass_weights(df, dataset.name)
+    #     syst_tools.add_massweights_hist(results, df, nominal_axes_thAgn, nominal_cols_thAgn, proc=dataset.name, addhelicity=True)
 
 smearing_weights_procs = []
 
@@ -270,11 +232,11 @@ def build_graph(df, dataset):
         df = theory_tools.define_prefsr_vars(df)
         if hasattr(dataset, "out_of_acceptance"):
             logger.debug("Reject events in fiducial phase space")
-            df = select_fiducial_space_theoryAgnostic(df, axis_ptVgen.edges[-1], axis_absYVgen.edges[-1], accept=False)
+            df = theoryAgnostic_tools.select_fiducial_space(df, theoryAgnostic_axes[0].edges[-1], theoryAgnostic_axes[1].edges[-1], accept=False)
         else:
             logger.debug("Select events in fiducial phase space for theory agnostic analysis")
-            df = select_fiducial_space_theoryAgnostic(df, axis_ptVgen.edges[-1], axis_absYVgen.edges[-1], accept=True)
-            add_xnorm_histograms_theoryAgnostic(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols)
+            df = theoryAgnostic_tools.select_fiducial_space(df, theoryAgnostic_axes[0].edges[-1], theoryAgnostic_axes[1].edges[-1], accept=True)
+            theoryAgnostic_tools.add_xnorm_histograms(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols)
             # helicity axis is special, defined through a tensor later, theoryAgnostic_ only includes W rapidity and pt for now
             axes = [*nominal_axes, *theoryAgnostic_axes]
             cols = [*nominal_cols, *theoryAgnostic_cols]
@@ -462,12 +424,11 @@ def build_graph(df, dataset):
         dataset.name = "Bkg"+dataset.name
 
     if isWorZ and args.addHelicityHistos:
-        whistosbyHelicity(df, results, dataset, axes, cols, args)
+        setTheoryAgnosticGraph(df, results, dataset, axes, cols, args)
         ## TODO: this part should be better melted in the rest of the code, there is too much duplication of what could happen later in the loop
         if hasattr(dataset, "out_of_acceptance"):
             # Rename dataset to not overwrite the original one
             dataset.name = "Bkg"+dataset.name
-    
     
     return results, weightsum
 
