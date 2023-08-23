@@ -19,6 +19,7 @@ parser.add_argument("--csVarsHist", action='store_true', help="Add CS variables 
 parser.add_argument("--axes", type=str, nargs="*", default=["mll", "ptll"], help="")
 parser.add_argument("--finePtBinning", action='store_true', help="Use fine binning for ptll")
 parser.add_argument("--noAuxiliaryHistograms", action="store_true", help="Remove auxiliary histograms to save memory (removed by default with --unfolding or --theoryAgnostic)")
+#parser.add_argument("--genVars", type=str, nargs="+", default=["ptVGen"], choices=["ptVGen", "absYVGen"], help="Generator level variable")
 parser.add_argument("--addHelicityHistos", action='store_true', help="Add V qT,Y axes and helicity axes for W samples")
 parser.add_argument("--onlyTheorySyst", action="store_true", help="Keep only theory systematic variations, mainly for tests")
 
@@ -180,6 +181,10 @@ def setTheoryAgnosticGraph(df, results, dataset, nominal_axes_thAgn, nominal_col
     #     #FIXME: hardcoded to keep mass weights, this would be done in add_theory_hists
     #     df = syst_tools.define_mass_weights(df, dataset.name)
     #     syst_tools.add_massweights_hist(results, df, nominal_axes_thAgn, nominal_cols_thAgn, proc=dataset.name, addhelicity=True)
+
+######################################################
+######################################################
+######################################################
 
 smearing_weights_procs = []
 
