@@ -60,7 +60,7 @@ all_axes = {
     "ptMinus": hist.axis.Regular(int(args.pt[0]), args.pt[1], args.pt[2], name = "ptMinus"),
     "cosThetaStarll": hist.axis.Regular(20, -1., 1., name = "cosThetaStarll", underflow=False, overflow=False),
     "phiStarll": hist.axis.Regular(20, -math.pi, math.pi, circular = True, name = "phiStarll"),
-    #"charge": hist.axis.Regular(2, -2., 2., underflow=False, overflow=False, name = "charge") # categorical axes in python bindings always have an overflow bin, so use a regular
+    # "charge": hist.axis.Regular(1, 0., 1., underflow=True, overflow=True, name = "charge"), # categorical axes in python bindings always have an overflow bin, so use a regular
     "massVgen": hist.axis.Variable(ewMassBins, name = "massVgen", overflow=not args.excludeFlow, underflow=not args.excludeFlow),
     "ewMll": hist.axis.Variable(ewMassBins, name = "ewMll", overflow=not args.excludeFlow, underflow=not args.excludeFlow),
     "ewMlly": hist.axis.Variable(ewMassBins, name = "ewMlly", overflow=not args.excludeFlow, underflow=not args.excludeFlow),
@@ -99,7 +99,7 @@ elif args.addHelicityHistos:
     axis_ptVgen = hist.axis.Variable(
         [0., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50.],
         #[0., 2.5, 5., 7.5, 10., 12.5, 15., 17.5, 20., 22.5, 25., 30., 35., 40., 45., 50.],
-        name = "ptVgenSig", underflow=False, overflow=False
+        name = "ptVgenSig", underflow=False, overflow=True
     )
     #axis_ptVgen.append(np.inf)
     #Taken from w-z gen histomaker     
@@ -176,7 +176,7 @@ def setTheoryAgnosticGraph(df, results, dataset, nominal_axes_thAgn, nominal_col
         if not args.onlyTheorySyst:
             df = syst_tools.add_L1Prefire_unc_hists(results, df, muon_prefiring_helper_stat, muon_prefiring_helper_syst, nominal_axes_thAgn, nominal_cols_thAgn, addhelicity=True)
             df = syst_tools.add_muon_efficiency_unc_hists(results, df, muon_efficiency_helper_stat, muon_efficiency_helper_syst, nominal_axes_thAgn, nominal_cols_thAgn, what_analysis=thisAnalysis, addhelicity=True)
-        df = syst_tools.add_theory_hists(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, nominal_axes_thAgn, nominal_cols_thAgn, for_wmass=True, addhelicity=True)
+        df = syst_tools.add_theory_hists(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, nominal_axes_thAgn, nominal_cols_thAgn, for_wmass=False, addhelicity=True)
     # else:
     #     #FIXME: hardcoded to keep mass weights, this would be done in add_theory_hists
     #     df = syst_tools.define_mass_weights(df, dataset.name)
@@ -241,7 +241,7 @@ def build_graph(df, dataset):
         else:
             logger.debug("Select events in fiducial phase space for theory agnostic analysis")
             df = theoryAgnostic_tools.select_fiducial_space(df, theoryAgnostic_axes[0].edges[-1], theoryAgnostic_axes[1].edges[-1], accept=True)
-            theoryAgnostic_tools.add_xnorm_histograms(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols)
+            theoryAgnostic_tools.add_xnorm_histograms(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols, for_wmass=False)
             # helicity axis is special, defined through a tensor later, theoryAgnostic_ only includes W rapidity and pt for now
             axes = [*nominal_axes, *theoryAgnostic_axes]
             cols = [*nominal_cols, *theoryAgnostic_cols]
@@ -322,6 +322,11 @@ def build_graph(df, dataset):
         for obs in auxiliary_gen_axes:
             results.append(df.HistoBoost(f"nominal_{obs}", [all_axes[obs]], [obs, "nominal_weight"]))
             df = syst_tools.add_theory_hists(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, [all_axes[obs]], [obs], base_name=f"nominal_{obs}", for_wmass=False)
+
+    # adding helicity moments
+    # df = df.Define("helicity_moments_scale_tensor", "wrem::makeHelicityMomentScaleTensor(csSineCosThetaPhi, scaleWeights_tensor, nominal_weight)")
+    # helicity_moments_scale = df.HistoBoost("helicity_moments_scale", nominal_axes, [*nominal_cols, "helicity_moments_scale_tensor"], tensor_axes = [wremnants.axis_helicity, *wremnants.scale_tensor_axes], storage=hist.storage.Double())
+    # results.append(helicity_moments_scale)
 
     # test plots
     if args.validationHists:

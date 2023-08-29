@@ -25,7 +25,7 @@ def define_helicity_weights(df):
     df = df.Define("nominal_weight_helicity", "wrem::scalarmultiplyHelWeightTensor(nominal_weight,helWeight_tensor)")
     return df
 
-def add_xnorm_histograms(results, df, args, dataset_name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols):
+def add_xnorm_histograms(results, df, args, dataset_name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols, for_wmass):
     # add histograms before any selection
     axis_helicity = helicity_utils.axis_helicity_multidim
     df_xnorm = df
@@ -40,7 +40,7 @@ def add_xnorm_histograms(results, df, args, dataset_name, corr_helpers, qcdScale
     xnormByHelicity = df_xnorm.HistoBoost("xnorm", xnorm_axes, [*xnorm_cols, "nominal_weight_helicity"], tensor_axes=[axis_helicity])
     results.append(xnormByHelicity)
     if not args.onlyMainHistograms:
-        syst_tools.add_theory_hists(results, df_xnorm, args, dataset_name, corr_helpers, qcdScaleByHelicity_helper, xnorm_axes, xnorm_cols, base_name="xnorm", for_wmass=True, addhelicity=True)
+        syst_tools.add_theory_hists(results, df_xnorm, args, dataset_name, corr_helpers, qcdScaleByHelicity_helper, xnorm_axes, xnorm_cols, base_name="xnorm", for_wmass=for_wmass, addhelicity=True)
     else:
         #FIXME: hardcoded to keep mass weights (this would be done in add_theory_hists) but removing all other theory systs
         df_xnorm = syst_tools.define_mass_weights(df_xnorm, dataset_name)

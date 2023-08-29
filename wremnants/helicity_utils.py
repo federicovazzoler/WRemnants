@@ -29,8 +29,15 @@ axis_helicity_multidim = hist.axis.Integer(-1, 8, name="helicitySig", overflow=F
 def makehelicityWeightHelper(is_w_like = False, filename=None):
     if filename is None:
         filename = f"{common.data_dir}/angularCoefficients/w_z_coeffs_scetlib_dyturboCorr.hdf5" 
-    with h5py.File(filename, "r") as ff:
-        out = narf.ioutils.pickle_load_h5py(ff["results"])
+    
+    if filename.endswith('hdf5'):
+        with h5py.File(filename, "r") as ff:
+            out = narf.ioutils.pickle_load_h5py(ff["results"])
+    elif filename.endswith('pkl.lz4'):
+        with lz4.frame.open(filename, "rb") as f:
+            out = pickle.load(f)
+    else:
+        raise RuntimeError(f"Unknown file extension for {filename}")
 
     corrh = out["Z"] if is_w_like else out["W"]
     if 'muRfact' in corrh.axes.name:
@@ -49,7 +56,30 @@ def makehelicityWeightHelper(is_w_like = False, filename=None):
     corrh_noerrs = hist.Hist(*corrh.axes, storage=hist.storage.Double())
     corrh_noerrs.values(flow=True)[...] = corrh.values(flow=True)
 
+    # DEBUGGING
+    h = corrh_noerrs[:,:,:,:,:]
+    values = h.values(flow=True)
+    wvalues = out['W'].project('massVgen','y','ptVgen','chargeVgen', 'helicity').values(flow=True)
+
+    print(values.shape)
+    print(wvalues.shape)
+
+    # Create a new array with the desired shape
+    new_shape = list(values.shape)
+    new_shape[3] = 2  # Change the size of the fourth axis to 3
+    newvalues = np.ones(new_shape)
+
+    # Broadcast the original array along the new fourth axis
+    newvalues[:] = values
+
+    new_h = hist.Hist(out['Z'].project('massVgen').axes[0], *out['W'].project('y','ptVgen','chargeVgen', 'helicity').axes, storage=hist.storage.Double())
+    new_h.values(flow=True)[...] = newvalues
+
+    corrh_noerrs = new_h
+    # END DEBUGGING
+
     return makeCorrectionsTensor(corrh_noerrs, ROOT.wrem.WeightByHelicityHelper, tensor_rank=1)
+
 
 #Muon eff vars
 def make_muon_eff_stat_helpers_helicity(helper_stat, nhelicity=9):
