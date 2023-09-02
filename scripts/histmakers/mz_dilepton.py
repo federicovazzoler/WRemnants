@@ -13,6 +13,7 @@ import lz4.frame
 import math
 import time
 import os
+import pdb
 
 
 parser.add_argument("--csVarsHist", action='store_true', help="Add CS variables to dilepton hist")
@@ -60,7 +61,6 @@ all_axes = {
     "ptMinus": hist.axis.Regular(int(args.pt[0]), args.pt[1], args.pt[2], name = "ptMinus"),
     "cosThetaStarll": hist.axis.Regular(20, -1., 1., name = "cosThetaStarll", underflow=False, overflow=False),
     "phiStarll": hist.axis.Regular(20, -math.pi, math.pi, circular = True, name = "phiStarll"),
-    # "charge": hist.axis.Regular(1, 0., 1., underflow=True, overflow=True, name = "charge"), # categorical axes in python bindings always have an overflow bin, so use a regular
     "massVgen": hist.axis.Variable(ewMassBins, name = "massVgen", overflow=not args.excludeFlow, underflow=not args.excludeFlow),
     "ewMll": hist.axis.Variable(ewMassBins, name = "ewMll", overflow=not args.excludeFlow, underflow=not args.excludeFlow),
     "ewMlly": hist.axis.Variable(ewMassBins, name = "ewMlly", overflow=not args.excludeFlow, underflow=not args.excludeFlow),
@@ -97,7 +97,9 @@ elif args.addHelicityHistos:
 
     #list(range(0,50,5)).append(np.inf) ,
     axis_ptVgen = hist.axis.Variable(
-        [0., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50.],
+        # ATLAS bins from arxiv:1606.00689
+        [0., 2.5, 5.0, 8.0, 11.4, 14.9, 18.5, 22.0, 25.5, 29.0, 32.6, 36.4, 40.4, 44.9, 50.2, 56.4, 63.9, 73.4, 85.4, 105.0, 132.0, 173.0, 253.0, 600.0],
+        #[0., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50.],
         #[0., 2.5, 5., 7.5, 10., 12.5, 15., 17.5, 20., 22.5, 25., 30., 35., 40., 45., 50.],
         name = "ptVgenSig", underflow=False, overflow=True
     )
@@ -166,9 +168,9 @@ corr_helpers = theory_corrections.load_corr_helpers([d.name for d in datasets if
 ## In fact, having this custom function overriding the main graph is probably not the best idea, should rather use the same
 
 # graph building for W sample with helicity weights
-def setTheoryAgnosticGraph(df, results, dataset, nominal_axes_thAgn, nominal_cols_thAgn, args):
+def setTheoryAgnosticGraph(df, results, dataset, nominal_axes_thAgn, nominal_cols_thAgn, args, isZ):
     logger.info(f"Setting theory agnostic graph for {dataset.name}")
-    df = theoryAgnostic_tools.define_helicity_weights(df)
+    df = theoryAgnostic_tools.define_helicity_weights(df, isZ)
     nominalByHelicity = df.HistoBoost("nominal", nominal_axes_thAgn, [*nominal_cols_thAgn, "nominal_weight_helicity"], tensor_axes=[axis_helicity])
     results.append(nominalByHelicity)
 
@@ -210,7 +212,7 @@ def build_graph(df, dataset):
     if args.unfolding and dataset.name == "ZmumuPostVFP":
         df = unfolding_tools.define_gen_level(df, args.genLevel, dataset.name, mode="dilepton")
 
-        if hasattr(dataset, "out_of_acceptance"):
+        if hasattr(dataset, "out_of_acceptance"):            
             logger.debug("Reject events in fiducial phase space")
             df = unfolding_tools.select_fiducial_space(df, mode="dilepton", pt_min=args.pt[1], pt_max=args.pt[2], 
                 mass_min=mass_min, mass_max=mass_max, selections=unfolding_selections, accept=False)
@@ -233,13 +235,21 @@ def build_graph(df, dataset):
 
             results.append(df_gen.HistoBoost(f"gen_{obs}", [all_axes[obs]], [obs, "nominal_weight"]))
             df_gen = syst_tools.add_theory_hists(results, df_gen, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, [all_axes[obs]], [obs], base_name=f"gen_{obs}", for_wmass=False)
-    if args.addHelicityHistos and isWorZ: # should be isW to do also Wtaunu
+    
+    if args.addHelicityHistos and isZ:
+
         df = theory_tools.define_prefsr_vars(df)
         if hasattr(dataset, "out_of_acceptance"):
+
+            pdb.set_trace()
+
             logger.debug("Reject events in fiducial phase space")
             df = theoryAgnostic_tools.select_fiducial_space(df, theoryAgnostic_axes[0].edges[-1], theoryAgnostic_axes[1].edges[-1], accept=False)
         else:
             logger.debug("Select events in fiducial phase space for theory agnostic analysis")
+            
+            pdb.set_trace()
+
             df = theoryAgnostic_tools.select_fiducial_space(df, theoryAgnostic_axes[0].edges[-1], theoryAgnostic_axes[1].edges[-1], accept=True)
             theoryAgnostic_tools.add_xnorm_histograms(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, theoryAgnostic_axes, theoryAgnostic_cols, for_wmass=False)
             # helicity axis is special, defined through a tensor later, theoryAgnostic_ only includes W rapidity and pt for now
@@ -322,11 +332,6 @@ def build_graph(df, dataset):
         for obs in auxiliary_gen_axes:
             results.append(df.HistoBoost(f"nominal_{obs}", [all_axes[obs]], [obs, "nominal_weight"]))
             df = syst_tools.add_theory_hists(results, df, args, dataset.name, corr_helpers, qcdScaleByHelicity_helper, [all_axes[obs]], [obs], base_name=f"nominal_{obs}", for_wmass=False)
-
-    # adding helicity moments
-    # df = df.Define("helicity_moments_scale_tensor", "wrem::makeHelicityMomentScaleTensor(csSineCosThetaPhi, scaleWeights_tensor, nominal_weight)")
-    # helicity_moments_scale = df.HistoBoost("helicity_moments_scale", nominal_axes, [*nominal_cols, "helicity_moments_scale_tensor"], tensor_axes = [wremnants.axis_helicity, *wremnants.scale_tensor_axes], storage=hist.storage.Double())
-    # results.append(helicity_moments_scale)
 
     # test plots
     if args.validationHists:
@@ -435,9 +440,11 @@ def build_graph(df, dataset):
         # Rename dataset to not overwrite the original one
         dataset.name = "Bkg"+dataset.name
 
-    if isWorZ and args.addHelicityHistos:
-        setTheoryAgnosticGraph(df, results, dataset, axes, cols, args)
-        ## TODO: this part should be better melted in the rest of the code, there is too much duplication of what could happen later in the loop
+    if isZ and args.addHelicityHistos:
+
+        setTheoryAgnosticGraph(df, results, dataset, axes, cols, args, isZ)
+
+        # ## TODO: this part should be better melted in the rest of the code, there is too much duplication of what could happen later in the loop
         if hasattr(dataset, "out_of_acceptance"):
             # Rename dataset to not overwrite the original one
             dataset.name = "Bkg"+dataset.name
