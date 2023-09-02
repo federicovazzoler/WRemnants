@@ -15,6 +15,7 @@ import numpy as np
 import h5py
 import hdf5plugin
 import narf
+import pdb
 
 logger = logging.child_logger(__name__)
 
@@ -55,28 +56,6 @@ def makehelicityWeightHelper(is_w_like = False, filename=None):
     # histogram has to be without errors to load the tensor directly
     corrh_noerrs = hist.Hist(*corrh.axes, storage=hist.storage.Double())
     corrh_noerrs.values(flow=True)[...] = corrh.values(flow=True)
-
-    # DEBUGGING
-    h = corrh_noerrs[:,:,:,:,:]
-    values = h.values(flow=True)
-    wvalues = out['W'].project('massVgen','y','ptVgen','chargeVgen', 'helicity').values(flow=True)
-
-    print(values.shape)
-    print(wvalues.shape)
-
-    # Create a new array with the desired shape
-    new_shape = list(values.shape)
-    new_shape[3] = 2  # Change the size of the fourth axis to 3
-    newvalues = np.ones(new_shape)
-
-    # Broadcast the original array along the new fourth axis
-    newvalues[:] = values
-
-    new_h = hist.Hist(out['Z'].project('massVgen').axes[0], *out['W'].project('y','ptVgen','chargeVgen', 'helicity').axes, storage=hist.storage.Double())
-    new_h.values(flow=True)[...] = newvalues
-
-    corrh_noerrs = new_h
-    # END DEBUGGING
 
     return makeCorrectionsTensor(corrh_noerrs, ROOT.wrem.WeightByHelicityHelper, tensor_rank=1)
 

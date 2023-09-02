@@ -18,9 +18,9 @@ def select_fiducial_space(df, ptVgenMax, absYVgenMax, accept=True):
         logger.debug(f"Theory agnostic fiducial cut (out-of-acceptance): not ({selection})")
     return df
 
-def define_helicity_weights(df):
+def define_helicity_weights(df, isZ):
     # define the helicity tensor, here nominal_weight will only have theory weights, no experimental pieces, it is defined in theory_tools.define_theory_weights_and_corrs
-    weightsByHelicity_helper = wremnants.makehelicityWeightHelper(is_w_like=False)
+    weightsByHelicity_helper = wremnants.makehelicityWeightHelper(is_w_like=isZ)
     df = df.Define("helWeight_tensor", weightsByHelicity_helper, ["massVgen", "yVgen", "ptVgen", "chargeVgen", "csSineCosThetaPhi", "nominal_weight"])
     df = df.Define("nominal_weight_helicity", "wrem::scalarmultiplyHelWeightTensor(nominal_weight,helWeight_tensor)")
     return df
@@ -31,12 +31,14 @@ def add_xnorm_histograms(results, df, args, dataset_name, corr_helpers, qcdScale
     df_xnorm = df
     df_xnorm = df_xnorm.DefinePerSample("exp_weight", "1.0")
     df_xnorm = theory_tools.define_theory_weights_and_corrs(df_xnorm, dataset_name, corr_helpers, args)
+
     # define the helicity tensor, here nominal_weight will only have theory weights, no experimental pieces, it is defined in theory_tools.define_theory_weights_and_corrs
-    df_xnorm = define_helicity_weights(df_xnorm)
+    df_xnorm = define_helicity_weights(df_xnorm, isZ=(not for_wmass))
     df_xnorm = df_xnorm.DefinePerSample("xnorm", "0.5")
     axis_xnorm = hist.axis.Regular(1, 0., 1., name = "count", underflow=False, overflow=False)
     xnorm_axes = [axis_xnorm, *theoryAgnostic_axes]
     xnorm_cols = ["xnorm", *theoryAgnostic_cols]
+
     xnormByHelicity = df_xnorm.HistoBoost("xnorm", xnorm_axes, [*xnorm_cols, "nominal_weight_helicity"], tensor_axes=[axis_helicity])
     results.append(xnormByHelicity)
     if not args.onlyMainHistograms:
