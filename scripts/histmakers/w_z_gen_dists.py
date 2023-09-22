@@ -49,8 +49,9 @@ axis_rapidity = axis_absYVgen if args.absY else axis_ygen
 col_rapidity =  "absYVgen" if args.absY else "yVgen"
 
 axis_ptVgen = hist.axis.Variable(
-    # list(range(0,151))+[160., 190.0, 220.0, 250.0, 300.0, 400.0, 500.0, 800.0, 1500.0], 
-    list(range(0,101)), # this is the same binning as hists from theory corrections
+    #list(range(0,151))+[160., 190.0, 220.0, 250.0, 300.0, 400.0, 500.0, 600.0], 
+    #list(range(0,101)), # this is the same binning as hists from theory corrections
+    [0.0,2.5,5.0,8.0,11.4,14.9,18.5,22.0,25.5,29.0,32.6,36.4,40.4,44.9,50.2,56.4,63.9,73.4,85.4,105.0,132.0,173.0,253.0,600.0], # to match ATLAS binning
     name = "ptVgen", underflow=False,
 )
 

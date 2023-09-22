@@ -27,7 +27,7 @@ def load_helicity_moments_for_sample_from_file(sampleName = "ZmumuPostVFP", file
 def make_Ais_for_observable(obs, h, rebin = None):
     if rebin is not None:
         h = hh.rebinHist(h, obs, rebin)
-    h_coeff = theory_tools.moments_to_angular_coeffs(h.project(obs, "helicity"))
+    h_coeff = theory_tools.moments_to_angular_coeffs(h.project(obs, "helicity"), sumW2 = True)
 
     return h_coeff
 
@@ -36,11 +36,13 @@ def plot_hist(h, xlabel = "", ylabel = "", xrange = None, yrange = None, corr = 
 
     xValues = h.axes.centers[0]
     yValues = h.values() * corr
-#    pdb.set_trace()
-    plt.plot(xValues, yValues, marker = '.', linestyle = 'solid')
+#    yVariances = h.variances()
+    plt.plot(xValues, yValues, marker = '.', linestyle = 'dotted')
+#    plt.errorbar(xValues, yValues, yerr=yVariances, marker = ".", linestyle = "solid")
 
     ax.set_xlabel(xlabel, fontsize = 22)
     ax.set_ylabel(ylabel, fontsize = 22)
+    ax.set_xscale("log")
     if xrange is not None:
         ax.set_xlim(xrange)
     if yrange is not None:
@@ -56,11 +58,11 @@ def save_fig(fig, outname):
 def plot_Ai_from_hist_for_observable(Ai, h, obs, outname):
     hToPlot = h[{"helicity" : complex(Ai)}]
     corr = 1
-    if Ai == 4: corr = -1
+    if Ai == 4 or Ai == 1 or Ai == 3: corr = -1
     save_fig(plot_hist(hToPlot, xlabel = obs, ylabel = f"$A_{Ai}$", xrange = None, yrange = None, corr = corr), outname)
 
 def main():
-    filePath = "/eos/home-f/fvazzole/TheoryAgnostic/AngularCoefficients/w_z_gen_dists_NonClosureCorl.hdf5" #FIXME
+    filePath = "/eos/home-f/fvazzole/TheoryAgnostic/AngularCoefficients/testpT/w_z_gen_dists_NonClosureCorl.hdf5" #FIXME
 
     # Load the helicity moments
     minnloZHelMom = load_helicity_moments_for_sample_from_file(sampleName = "ZmumuPostVFP", filePath = filePath)
@@ -68,7 +70,7 @@ def main():
     minnloWpHelMom = load_helicity_moments_for_sample_from_file(sampleName = "WplusmunuPostVFP", filePath = filePath)
 
     # Project the helicity moments to the diffent axes
-    minnloZcoeff_ptVgen = make_Ais_for_observable("ptVgen", minnloZHelMom, [i for i in range(0, 100, 10)])
+    minnloZcoeff_ptVgen = make_Ais_for_observable("ptVgen", minnloZHelMom, [0.0,2.5,5.0,8.0,11.4,14.9,18.5,22.0,25.5,29.0,32.6,36.4,40.4,44.9,50.2,56.4,63.9,73.4,85.4,105.0,132.0,173.0,253.0,600.0])
     minnloZcoeff_massVgen = make_Ais_for_observable("massVgen", minnloZHelMom)
 
 
