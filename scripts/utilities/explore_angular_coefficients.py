@@ -6,6 +6,7 @@ from utilities import boostHistHelpers as hh, logging
 from utilities import input_tools
 from wremnants import theory_tools
 import h5py
+import narf
 from narf import ioutils
 import ROOT
 from wremnants import plot_tools
