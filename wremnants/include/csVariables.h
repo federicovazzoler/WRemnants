@@ -42,7 +42,7 @@ struct CSVars {
 
 };
 
-CSVars CalccsSineCosThetaPhi(const PtEtaPhiMVector& antilepton, const PtEtaPhiMVector& lepton) {
+CSVars CalccsSineCosThetaPhiVanilla(const PtEtaPhiMVector& antilepton, const PtEtaPhiMVector& lepton) {
     PxPyPzEVector antilepton_v(antilepton);
     PxPyPzEVector dilepton = antilepton_v + PxPyPzEVector(lepton);
     const int zsign = std::copysign(1.0, dilepton.z());
@@ -68,6 +68,34 @@ CSVars CalccsSineCosThetaPhi(const PtEtaPhiMVector& antilepton, const PtEtaPhiMV
     double cosphi = dot(csXaxis, antilepton_boost)/sintheta;
 
     CSVars angles = {sintheta, costheta, sinphi, cosphi};
+    return angles;
+}
+
+CSVars CalccsSineCosThetaPhi(const PtEtaPhiMVector& antilepton, const PtEtaPhiMVector& lepton) {
+	// following https://arxiv.org/pdf/2006.11382.pdf pag. 18 eq. 2.56 and 2.57
+  	PxPyPzEVector p1(lepton);
+  	PxPyPzEVector p2(antilepton);
+  	PxPyPzEVector Q = p1+p2;
+
+	// arbitrarily chosen the positive orientation of the z axis by having hadron a move in the z direction in the lab frame. As a result, the negatively charged lepton moves into the same rest-frame hemisphere as hadron a for costheta > 0
+  	const int zsign = std::copysign(1.0, Q.z());
+  	const double energy = 6500.;
+  	PxPyPzEVector pa(0., 0., zsign*energy, energy);
+  	PxPyPzEVector pb(0., 0., -1.*zsign*energy, energy);
+
+	double cosTheta = 1. / (Q.M() * Q.Mt()) * ((p1.E() + p1.z()) * (p2.E() - p2.z()) - (p1.E() - p1.z()) * (p2.E() + p2.z()));
+	double sinTheta = std::sqrt(1 - cosTheta * cosTheta);
+	double cosPhi = 1. / sinTheta * (p1.Pt() * p1.Pt() - p2.Pt() * p2.Pt()) / (Q.Pt() * Q.Mt());
+	double sinPhi = 2. / sinTheta * (p1.y() * p2.x() - p2.y() * p1.x()) / (Q.Pt() * Q.M());
+
+#if 1
+	cosTheta = cosTheta * zsign;
+	double Phi = std::atan2(sinPhi, cosPhi) * zsign;
+	cosPhi = std::cos(Phi);
+	sinPhi = std::sin(Phi);
+#endif
+
+	CSVars angles = {sinTheta, cosTheta, sinPhi, cosPhi};
     return angles;
 }
 
