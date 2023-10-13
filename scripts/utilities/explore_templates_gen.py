@@ -34,7 +34,7 @@ def main():
 
     LUMI = '16.8'
     INPUT_FILE = options.file
-    OUTPUT_LABEL = options.output + '/{}.pdf'
+    OUTPUT_LABEL = options.output + '/{}.png'
 
     if not os.path.isdir(options.output):
         os.mkdir(options.output)
@@ -46,9 +46,9 @@ def main():
 
     # grab the template
     h = results['ZmumuPostVFP']['output']['nominal_gen'].get()
-    print(h.axes)
+#    print(h.axes)
     h2 = results['ZmumuPostVFP']['output']['helicity_moments_scale'].get()
-    print(h2.axes)
+#    print(h2.axes)
         
     h = h[::sum, 5j:8j:sum, :, :]
     hep.hist2dplot(h)
@@ -69,14 +69,25 @@ def main():
     plt.clf()
 
     # plot the P_i templates
-    for hel in range(len(h2.axes[-1])):
+    for hel in range(len(h2.axes[-3])):
 
         # integrate template across other axes --> yields (cosTheta, phi, pTVgen) for chosen helicity
         h_pi = h2[::sum, 5j:8:sum, :, :, hel, 1j, 1j]
+        h_pi_new = hist.Hist(h_pi.axes[1], hist.axis.Regular(10, 0, 2*np.pi, circular = True, name = "phiStarll"), storage = hist.storage.Double())
+#        h_pi_new = hist.Hist(h_pi.axes[1], h_pi.axes[0], storage = hist.storage.Double())
+        h_pi_new.values()[...] = h_pi.values().T
 
+        original_values = h_pi_new.values()
+        new_values = np.copy(original_values)
+        N = new_values.shape[1]
+        new_values[:, 0:int(N/2)] = original_values[:, int(N/2):int(N)]
+        new_values[:, int(N/2):int(N)] = original_values[:, 0:int(N/2)]
+        h_pi_new.values()[...] = new_values
+
+        h_pi = h_pi_new
         # if requested, integrate over a particular kinematic angle
-        if options.integrateTheta: h_pi = h_pi[:, ::sum]
-        elif options.integratePhi: h_pi = h_pi[::sum, :]
+        if options.integrateTheta: h_pi = h_pi[::sum, :]
+        elif options.integratePhi: h_pi = h_pi[:, ::sum]
 
         # now plot
         fig = plt.figure()
@@ -88,11 +99,8 @@ def main():
         var_labels = ''
         if not options.integrateTheta: var_labels += r'\cos \theta_{CS}'
         if not options.integrateTheta and not options.integratePhi: var_labels += ', '
-        if not options.integratePhi: var_labels += r'\phi_{CS}$'
-        fig.suptitle("Templated ${}$".format(label) + \
-            r"( ${}$ ), " + \
-            "$p_T^Z = {}-{}$ GeV".format(var_labels, options.lower_bound, options.upper_bound),
-            fontsize=24)
+        if not options.integratePhi: var_labels += r'\phi_{CS}'
+        fig.suptitle("Gen. ${label}$ ( ${var_labels}$ ), $p_T^Z = {lb}-{ub}$ GeV".format(label = label, var_labels = var_labels, lb = options.lower_bound, ub = options.upper_bound), fontsize=24)
         if options.integrateTheta: ax.set_xlabel(r"$\phi_{CS}$")
         elif options.integratePhi: ax.set_xlabel(r"$\cos\theta_{CS}$")
         else:
@@ -101,9 +109,9 @@ def main():
         if options.integrateTheta: label += "_phi"
         elif options.integratePhi: label += "_cosTheta"
         fig.savefig(OUTPUT_LABEL.format(label))
-        fig.savefig(OUTPUT_LABEL.format(label).replace("pdf", "png"))
+#        fig.savefig(OUTPUT_LABEL.format(label).replace("pdf", "png"))
         print("Saving to", OUTPUT_LABEL.format(label))
-        fig.show()
+#        fig.show()
 
 
 

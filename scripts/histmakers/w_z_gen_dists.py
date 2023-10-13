@@ -39,7 +39,6 @@ axis_massWgen = hist.axis.Variable([5., 13000.], name="massVgen", underflow=True
 axis_massZgen = hist.axis.Regular(12, 60., 120., name="massVgen")
 
 axis_absYVgen = hist.axis.Variable(
-    # [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 10], 
     [0., 0.25, 0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.25, 2.5, 2.75, 3., 3.25, 3.5, 4., 5.], # this is the same binning as hists from theory corrections
     name = "absYVgen", underflow=False
 )
@@ -49,9 +48,7 @@ axis_rapidity = axis_absYVgen if args.absY else axis_ygen
 col_rapidity =  "absYVgen" if args.absY else "yVgen"
 
 axis_ptVgen = hist.axis.Variable(
-    #list(range(0,151))+[160., 190.0, 220.0, 250.0, 300.0, 400.0, 500.0, 600.0], 
-    #list(range(0,101)), # this is the same binning as hists from theory corrections
-    [0.0,2.5,5.0,8.0,11.4,14.9,18.5,22.0,25.5,29.0,32.6,36.4,40.4,44.9,50.2,56.4,63.9,73.4,85.4,105.0,132.0,173.0,253.0,600.0], # to match ATLAS binning
+    list(range(0,101)), # this is the same binning as hists from theory corrections
     name = "ptVgen", underflow=False,
 )
 
@@ -62,6 +59,9 @@ axis_chargeWgen = hist.axis.Regular(
 axis_chargeZgen = hist.axis.Integer(
     0, 1, name="chargeVgen", underflow=False, overflow=False
 )
+
+axis_costhetastarll = hist.axis.Regular(10, -1., 1., name = "cosThetaStarll", underflow=False, overflow=False)
+axis_phistarll = hist.axis.Regular(10, -math.pi, math.pi, circular = True, name = "phiStarll")
 
 axis_l_eta_gen = hist.axis.Regular(48, -2.4, 2.4, name = "eta")
 axis_l_pt_gen = hist.axis.Regular(29, 26., 55., name = "pt")
@@ -99,14 +99,22 @@ def build_graph(df, dataset):
     df = theory_tools.define_theory_weights_and_corrs(df, dataset.name, corr_helpers, args)
 
     if isZ:
-        nominal_axes = [axis_massZgen, axis_rapidity, axis_ptVgen, axis_chargeZgen]
+        #nominal_axes = [axis_massZgen, axis_rapidity, axis_ptVgen, axis_chargeZgen]
+        nominal_axes = [axis_rapidity, axis_ptVgen, axis_phistarll, axis_costhetastarll]
         lep_axes = [axis_l_eta_gen, axis_l_pt_gen, axis_chargeZgen]
     else:
         nominal_axes = [axis_massWgen, axis_rapidity, axis_ptVgen, axis_chargeWgen]
         lep_axes = [axis_l_eta_gen, axis_l_pt_gen, axis_chargeWgen]
 
-    nominal_cols = ["massVgen", col_rapidity, "ptVgen", "chargeVgen"]
+    #nominal_cols = ["massVgen", col_rapidity, "ptVgen", "chargeVgen", "phiStarll", "cosThetaStarll"]
+    nominal_cols = [col_rapidity, "ptVgen", "phiStarll", "cosThetaStarll"]
     lep_cols = ["etaPrefsrLep", "ptPrefsrLep", "chargeVgen"]
+
+    df = df.Define('ptPrefsrLep', 'genlanti.pt()')
+    df = df.Define('etaPrefsrLep', 'genlanti.eta()')
+    df = df.Define("CSangles", "wrem::CalccsSineCosThetaPhi(genlanti, genl)")
+    df = df.Define("cosThetaStarll", "CSangles.costheta")
+    df = df.Define("phiStarll", "std::atan2(CSangles.sinphi, blah.cosphi)")
 
     if args.singleLeptonHists and (isW or isZ):
         if isW:
@@ -115,7 +123,10 @@ def build_graph(df, dataset):
         else:
             df = df.Define('ptPrefsrLep', 'genlanti.pt()')
             df = df.Define('etaPrefsrLep', 'genlanti.eta()')
-        results.append(df.HistoBoost("nominal_genlep", lep_axes, [*lep_cols, "nominal_weight"], storage=hist.storage.Weight()))
+            df = df.Define("csSineCosThetaPhi", "wrem::CalccsSineCosThetaPhi(genlanti, genl)")
+            df = df.Define("cosThetaStarll", "csSineCosThetaPhill.costheta")
+            df = df.Define("phiStarll", "std::atan2(csSineCosThetaPhill.sinphi, csSineCosThetaPhill.cosphi)")
+        results.append(df.HistoBoost("nominal_genlep", lep_axes, [*lep_cols, "nominal_weight"], storage=hist.storage.Double()))
 
     if not args.skipEWHists and (isW or isZ):
         if isZ:
@@ -258,3 +269,4 @@ if not args.skipAngularCoeffs:
     if coeffs:
         outfname = "w_z_coeffs_absY.hdf5" if args.absY else "w_z_coeffs.hdf5"
         output_tools.write_analysis_output(coeffs, outfname, args, update_name=not args.forceDefaultName)
+
