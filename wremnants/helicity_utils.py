@@ -48,8 +48,6 @@ def makehelicityWeightHelper(is_w_like = False, filename=None):
     missing = set(["y", "ptVgen", "chargeVgen", "helicity", "massVgen"]).difference(set(corrh.axes.name))
     if missing != set():
         raise ValueError (f"Axes {missing} are not present in the coeff histogram")
-    
-    corrh = corrh.project('massVgen','y','ptVgen','chargeVgen', 'helicity')
 
     if np.count_nonzero(corrh[{"helicity" : -1.j}] == 0):
         logger.warning("Zeros in sigma UL for the angular coefficients will give undefined behaviour!")
