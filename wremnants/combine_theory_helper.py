@@ -16,6 +16,9 @@ class TheoryHelper(object):
         self.card_tool = card_tool
         corr_hists = input_tools.args_from_metadata(self.card_tool, "theoryCorr")
         self.corr_hist_name = (corr_hists[0]+"Corr") if corr_hists else None
+        # Workaround for now, in case PDF vars and scale vars are split
+        if "scetlib_dyturbo" in self.corr_hist_name and "scetlib_dyturbo" in corr_hists:
+            self.corr_hist_name = "scetlib_dyturboCorr"
         self.syst_ax = "vars"
         self.corr_hist = None
         self.resumUnc = None
@@ -437,17 +440,30 @@ class TheoryHelper(object):
 
         # TODO: For now only MiNNLO alpha_s is supported
         asRange = pdfInfo['alphasRange']
-        self.card_tool.addSystematic(f"{pdfName}alphaS{asRange}", 
-            processes=["single_v_samples"],
-            mirror=False,
-            group=pdfName,
-            splitGroup={f"{pdfName}AlphaS": '.*'},
-            systAxes=["alphasVar"],
-            skipEntries=[{"alphasVar" : "as0118"}],
-            systNameReplace=[("as", "pdfAlphaS")]+[("0116", "Down"), ("0120", "Up")] if asRange == "002" else [("0117", "Down"), ("0119", "Up")],
-            scale=0.75 if asRange == "002" else 1.5,
-            passToFakes=self.propagate_to_fakes,
-        )
+#        self.card_tool.addSystematic(f"{pdfName}alphaS{asRange}", 
+#            processes=["single_v_samples"],
+#            mirror=False,
+#            group=pdfName,
+#            splitGroup={f"{pdfName}AlphaS": '.*'},
+#            systAxes=["alphasVar"],
+#            skipEntries=[{"alphasVar" : "as0118"}],
+#            systNameReplace=[("as", "pdfAlphaS")]+[("0116", "Down"), ("0120", "Up")] if asRange == "002" else [("0117", "Down"), ("0119", "Up")],
+#            scale=0.75 if asRange == "002" else 1.5,
+#            passToFakes=self.propagate_to_fakes,
+#        )
+
+        self.card_tool.addSystematic(f"scetlib_dyturboMSHT20_pdfasCorr",
+                processes=["single_v_samples"],
+                mirror=False,
+                group=pdfName,
+                splitGroup={f"scetlib_dyturboMSHT20_pdfasCorr": '.*'},
+                systAxes=["vars"],
+                skipEntries=[{"vars" : "pdf0"}],
+                systNameReplace=[("pdf", "pdfAlphaS")]+[("2", "Down"), ("5", "Up")],
+                scale=0.75,
+                passToFakes=self.propagate_to_fakes,
+                noi=True,
+            )
 
     def add_resum_transition_uncertainty(self):
         obs = self.card_tool.fit_axes[:]
