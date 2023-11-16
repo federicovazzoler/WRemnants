@@ -100,7 +100,7 @@ def plotImpacts(df, poi, pulls=False, normalize=False, oneSidedImpacts=False):
         # append numerical values of impacts on nuisance name; fill up empty room with spaces to align numbers
         frmt = "{:0"+str(int(np.log10(max(df[impact_str])))+2)+".2f}"
         if poi.startswith("pdfAlphaS"):
-            frmt = "{:0"+str(int(np.log10(max(df[impact_str])))+2)+".4f}"
+            frmt = "{:0"+str(int(np.log10(max(df[impact_str])))+2)+".2f}"
         nval = df[impact_str].apply(lambda x,frmt=frmt: frmt.format(x)) #.astype(str)
         nspace = nval.apply(lambda x, n=nval.apply(len).max(): " "*(n - len(x))) 
         if include_ref:
@@ -115,7 +115,7 @@ def plotImpacts(df, poi, pulls=False, normalize=False, oneSidedImpacts=False):
     else:
         labels = df["label"]
         textargs = dict(
-            texttemplate="%{x:0.4f}" if poi.startswith("pdfAlphaS") else "%{x:0.2f}",
+            texttemplate="%{x:0.2f}" if poi.startswith("pdfAlphaS") else "%{x:0.2f}",
             textposition="outside",
             textfont_size=12,
             textangle=0,
@@ -258,7 +258,7 @@ def plotImpacts(df, poi, pulls=False, normalize=False, oneSidedImpacts=False):
 
 def readFitInfoFromFile(rf, filename, poi, group=False, stat=0.0, normalize=False, scale=100):
     if poi.startswith("pdfAlphaS"):
-        scale=0.002*0.75
+        scale=0.002*0.75*10000
 
     impacts, labels, _ = combinetf_input.read_impacts_poi(rf, group, add_total=group, stat=stat, poi=poi, normalize=normalize)
 
