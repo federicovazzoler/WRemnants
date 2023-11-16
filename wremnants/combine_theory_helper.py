@@ -440,18 +440,6 @@ class TheoryHelper(object):
 
         # TODO: For now only MiNNLO alpha_s is supported
         asRange = pdfInfo['alphasRange']
-#        self.card_tool.addSystematic(f"{pdfName}alphaS{asRange}", 
-#            processes=["single_v_samples"],
-#            mirror=False,
-#            group=pdfName,
-#            splitGroup={f"{pdfName}AlphaS": '.*'},
-#            systAxes=["alphasVar"],
-#            skipEntries=[{"alphasVar" : "as0118"}],
-#            systNameReplace=[("as", "pdfAlphaS")]+[("0116", "Down"), ("0120", "Up")] if asRange == "002" else [("0117", "Down"), ("0119", "Up")],
-#            scale=0.75 if asRange == "002" else 1.5,
-#            passToFakes=self.propagate_to_fakes,
-#        )
-
         self.card_tool.addSystematic(f"scetlib_dyturboMSHT20_pdfasCorr",
                 processes=["single_v_samples"],
                 mirror=False,
