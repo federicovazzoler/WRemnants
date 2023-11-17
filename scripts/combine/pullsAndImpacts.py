@@ -258,7 +258,7 @@ def plotImpacts(df, poi, pulls=False, normalize=False, oneSidedImpacts=False):
 
 def readFitInfoFromFile(rf, filename, poi, group=False, stat=0.0, normalize=False, scale=100):
     if poi.startswith("pdfAlphaS"):
-        scale=0.002*0.75*10000
+        scale=0.002*10000
 
     impacts, labels, _ = combinetf_input.read_impacts_poi(rf, group, add_total=group, stat=stat, poi=poi, normalize=normalize)
 

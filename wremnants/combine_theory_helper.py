@@ -448,7 +448,6 @@ class TheoryHelper(object):
                 systAxes=["vars"],
                 skipEntries=[{"vars" : "pdf0"}],
                 systNameReplace=[("pdf", "pdfAlphaS")]+[("2", "Down"), ("5", "Up")],
-                scale=0.75,
                 passToFakes=self.propagate_to_fakes,
                 noi=True,
             )
