@@ -103,6 +103,28 @@ nuisance_groupings = {
         "muon_eff_syst_reco", "muon_eff_syst_trigger", "muon_eff_syst_iso", "muon_eff_syst_idip",
         "muonPrefire", "ecalPrefire",
         "nonClosure", "resolutionCrctn",
+    ],
+    "custom": common_groups + [
+        "resumTNP",
+        "resumNonpert",
+        "QCDscale",
+        "pdfMSHT20",
+        "muon_eff_stat_reco",
+        "muon_eff_stat",
+        "muon_eff_stat_tracking",
+        "muon_eff_stat_idip",
+        "muon_eff_stat_trigger",
+        "muon_eff_stat_iso",
+        "muon_eff_syst_reco",
+        "muon_eff_syst_tracking",
+        "muon_eff_syst_idip",
+        "muon_eff_syst_trigger",
+        "muon_eff_syst_iso",
+        "muon_eff_syst",
+        "muonPrefire",
+        "ecalPrefire",
+        "nonClosure",
+        "resolutionCrctn"
     ]
 }
 
